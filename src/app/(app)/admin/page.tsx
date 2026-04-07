@@ -49,12 +49,20 @@ export default async function AdminPage({
           <h2 className="text-sm font-medium text-[var(--muted)]">
             데이터보내기 (CSV)
           </h2>
-          <Link
-            href={`/admin/export?from=${fromStr}&to=${toStr}&teamId=${teamId ?? "all"}`}
-            className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
-          >
-            최근 30일 CSV
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/users/new"
+              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
+            >
+              사용자 추가
+            </Link>
+            <Link
+              href={`/admin/export?from=${fromStr}&to=${toStr}&teamId=${teamId ?? "all"}`}
+              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
+            >
+              최근 30일 CSV
+            </Link>
+          </div>
         </div>
         <form className="flex flex-wrap items-end gap-3 text-sm">
           <label className="flex flex-col gap-1 text-[var(--muted)]">
