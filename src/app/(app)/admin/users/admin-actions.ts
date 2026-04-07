@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { adminResetPasswordSchema } from "@/validators/admin-user";
+import { adminUpdateUserSchema } from "@/validators/admin-user-edit";
 
 function forbidden() {
   return { ok: false as const, message: "권한이 없습니다." };
@@ -109,5 +110,77 @@ export async function adminDeleteUserAction(formData: FormData) {
   revalidatePath("/admin/users");
   revalidatePath("/admin");
   return { ok: true as const, message: "사용자를 삭제했습니다." };
+}
+
+export async function adminUpdateUserAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
+    return forbidden();
+  }
+
+  const raw = {
+    userId: String(formData.get("userId") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    teamId: String(formData.get("teamId") ?? ""),
+  };
+
+  const parsed = adminUpdateUserSchema.safeParse(raw);
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.flatten().fieldErrors;
+    if (fieldErrors.email?.[0]) return { ok: false as const, message: fieldErrors.email[0] };
+    if (fieldErrors.name?.[0]) return { ok: false as const, message: fieldErrors.name[0] };
+    return {
+      ok: false as const,
+      message: parsed.error.flatten().formErrors[0] ?? "입력값을 확인하세요.",
+    };
+  }
+
+  const current = await prisma.user.findUnique({
+    where: { id: parsed.data.userId },
+    select: { id: true, role: true, email: true, name: true, teamId: true },
+  });
+  if (!current) {
+    return { ok: false as const, message: "대상 사용자를 찾을 수 없습니다." };
+  }
+
+  const nextEmail = parsed.data.email;
+  const nextName = parsed.data.name;
+  const nextTeamId = parsed.data.teamId ?? null;
+
+  // For safety: do not allow editing admin email via this UI.
+  if (current.role === "ADMIN" && nextEmail !== current.email) {
+    return { ok: false as const, message: "관리자 계정의 이메일은 변경할 수 없습니다." };
+  }
+
+  if (
+    nextEmail === current.email &&
+    nextName === current.name &&
+    nextTeamId === (current.teamId ?? null)
+  ) {
+    return { ok: true as const, message: "변경 사항이 없습니다." };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: current.id },
+      data: {
+        email: nextEmail,
+        name: nextName,
+        teamId: nextTeamId,
+      },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError) {
+      if (e.code === "P2002") {
+        return { ok: false as const, message: "이미 사용 중인 이메일입니다." };
+      }
+    }
+    return { ok: false as const, message: "수정에 실패했습니다." };
+  }
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${current.id}/edit`);
+  return { ok: true as const, message: "사용자 정보를 수정했습니다." };
 }
 
