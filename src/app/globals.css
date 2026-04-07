@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --text: oklch(0.22 0.02 260);
+  --muted: oklch(0.45 0.02 260);
+  --surface: oklch(0.98 0.01 260);
+  --surface-raised: oklch(1 0 0);
+  --border: oklch(0.88 0.01 260);
+  --accent: oklch(0.52 0.14 250);
+  --accent-contrast: oklch(0.99 0 0);
+  --danger: oklch(0.5 0.2 25);
+  --success: oklch(0.45 0.12 155);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --text: oklch(0.93 0.02 260);
+    --muted: oklch(0.65 0.02 260);
+    --surface: oklch(0.18 0.02 260);
+    --surface-raised: oklch(0.22 0.02 260);
+    --border: oklch(0.32 0.02 260);
+    --accent: oklch(0.72 0.12 250);
+    --accent-contrast: oklch(0.15 0.02 260);
+    --danger: oklch(0.65 0.18 25);
+    --success: oklch(0.7 0.12 155);
+  }
+}
+
+@theme inline {
+  --color-background: var(--surface);
+  --color-foreground: var(--text);
+  --font-sans: system-ui, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
 }

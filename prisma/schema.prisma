@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+enum AttendanceKind {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum HalfDaySlot {
+  AM
+  PM
+}
+
+model Team {
+  id    String @id @default(cuid())
+  name  String
+  users User[]
+}
+
+model User {
+  id            String             @id @default(cuid())
+  email         String             @unique
+  passwordHash  String
+  name          String
+  role          Role               @default(EMPLOYEE)
+  teamId        String?
+  team          Team?              @relation(fields: [teamId], references: [id])
+  attendances   AttendanceRecord[]
+  leaveRequests LeaveRequest[]     @relation("LeaveUser")
+  decidedLeaves LeaveRequest[]     @relation("LeaveDecider")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model AttendanceRecord {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   AttendanceKind
+  at     DateTime         @default(now())
+  source String           @default("web")
+
+  @@index([userId, at])
+}
+
+model LeaveType {
+  id       String         @id @default(cuid())
+  code     String         @unique
+  name     String
+  requests LeaveRequest[]
+}
+
+model LeaveRequest {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation("LeaveUser", fields: [userId], references: [id], onDelete: Cascade)
+  typeId      String
+  type        LeaveType     @relation(fields: [typeId], references: [id])
+  startDate   DateTime
+  endDate     DateTime
+  halfDay     HalfDaySlot?
+  status      LeaveStatus   @default(PENDING)
+  reason      String?
+  decidedAt   DateTime?
+  decidedById String?
+  decidedBy   User?         @relation("LeaveDecider", fields: [decidedById], references: [id])
+  createdAt   DateTime      @default(now())
+
+  @@index([userId])
+  @@index([status])
+}
