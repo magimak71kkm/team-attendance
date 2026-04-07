@@ -57,6 +57,12 @@ export default async function AdminPage({
               사용자 추가
             </Link>
             <Link
+              href="/admin/users"
+              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
+            >
+              사용자 관리
+            </Link>
+            <Link
               href={`/admin/export?from=${fromStr}&to=${toStr}&teamId=${teamId ?? "all"}`}
               className="rounded-md border border-[var(--border)] px-3 py-1.5 text-sm hover:border-[var(--accent)]"
             >
