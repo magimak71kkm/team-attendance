@@ -6,23 +6,14 @@ import { prisma } from "@/lib/db";
 import { checkLoginRateLimit } from "@/lib/rate-limit";
 
 const credentialsSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .pipe(z.string().email()),
+  email: z.string().trim().toLowerCase().pipe(z.string().email()),
   password: z.string().min(1),
 });
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
-  pages: {
-    signIn: "/login",
-  },
-  session: {
-    strategy: "jwt",
-    maxAge: 60 * 60 * 8,
-  },
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
   providers: [
     Credentials({
       name: "credentials",
@@ -31,49 +22,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const parsed = credentialsSchema.safeParse(credentials);
-        if (!parsed.success) {
+        try {
+          const parsed = credentialsSchema.safeParse(credentials);
+          if (!parsed.success) {
+            console.error("Schema parse failed:", parsed.error);
+            return null;
+          }
+          const emailKey = parsed.data.email;
+          console.log("Trying login for:", emailKey);
+          const user = await prisma.user.findUnique({ where: { email: emailKey } });
+          console.log("User found:", user ? "yes" : "no");
+          if (!user) { checkLoginRateLimit(`fail:${emailKey}`); return null; }
+          const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
+          console.log("Password match:", ok);
+          if (!ok) { checkLoginRateLimit(`fail:${emailKey}`); return null; }
+          return { id: user.id, email: user.email, name: user.name, role: user.role };
+        } catch (e) {
+          console.error("Auth error:", e);
           return null;
         }
-
-        const emailKey = parsed.data.email;
-
-        const user = await prisma.user.findUnique({
-          where: { email: emailKey },
-        });
-        if (!user) {
-          checkLoginRateLimit(`fail:${emailKey}`);
-          return null;
-        }
-
-        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-        if (!ok) {
-          checkLoginRateLimit(`fail:${emailKey}`);
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        };
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) {
-        token.id = user.id!;
-        token.role = (user as { role?: string }).role;
-      }
+      if (user) { token.id = user.id!; token.role = (user as { role?: string }).role; }
       return token;
     },
     session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-      }
+      if (session.user) { session.user.id = token.id as string; session.user.role = token.role as string; }
       return session;
     },
   },
