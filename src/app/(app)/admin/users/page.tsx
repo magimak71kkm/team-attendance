@@ -70,7 +70,15 @@ export default async function AdminUsersPage() {
                   {u.createdAt.toLocaleDateString("ko-KR")}
                 </td>
                 <td className="px-4 py-2 text-right align-top">
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/admin/users/${u.id}/edit`}
+                      className="rounded border border-[var(--border)] px-2.5 py-1 text-xs text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--text)]"
+                    >
+                      정보 수정
+                    </Link>
                   <UserRowActions userId={u.id} />
+                  </div>
                 </td>
               </tr>
             ))}
