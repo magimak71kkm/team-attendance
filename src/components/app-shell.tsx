@@ -39,6 +39,12 @@ export function AppShell({
                 {role === "ADMIN" ? "관리자" : "직원"}
               </span>
             </span>
+            <Link
+              href="/account/password"
+              className="rounded-md border border-[var(--border)] px-3 py-1.5 text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--text)]"
+            >
+              비밀번호 변경
+            </Link>
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
